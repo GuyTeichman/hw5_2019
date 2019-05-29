@@ -11,15 +11,21 @@ class QuestionnaireAnalysis:
     """
 
     def __init__(self, data_fname: Union[pathlib.Path, str]):
-        # ...
-        self.fname = data_fname
+        if isinstance(data_fname, str):
+            self.data_fname = pathlib.Path(data_fname)
+        else:
+            self.data_fname = data_fname
+        if not (self.data_fname.exists() and self.data_fname.is_file()):
+            raise ValueError("File does not exist")
+        self.data = None
 
     def read_data(self):
         """
         Reads the json data located in self.data_fname into memory, to
         the attribute self.data.
         """
-        # ...
+        with open(self.data_fname) as f:
+            self.data = pd.read_json(f, orient='records')
 
     def show_age_distrib(self) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -28,6 +34,10 @@ class QuestionnaireAnalysis:
         The first item being the number of people in a given bin.
         The second item being the bin edges.
         """
+        bin_edges = np.arange(0, 110, 10)
+        hist = self.data.hist(column='age', bins=bin_edges, right=False)
+        bin_vals = pd.cut(self.data['age'], bins=bin_edges, right=False).value_counts().sort_index().values
+        return bin_vals, bin_edges
 
     def remove_rows_without_mail(self) -> pd.DataFrame:
         """
@@ -35,21 +45,31 @@ class QuestionnaireAnalysis:
         Returns the corrected DataFrame, i.e. the same table but with
         the erroneous rows removed and the (ordinal) index after a reset.
         """
+        mask = (self.data['email'].str.endswith('.com') | self.data['email'].str.endswith('.c')) & self.data[
+            'email'].str.contains('@') & ~self.data['email'].str.contains(r'@.', regex=False) & ~self.data[
+            'email'].str.startswith(r'@')
 
-    def fill_na_with_mean(self) -> Union[pd.DataFrame, np.ndarray]:
-        """
-        Finds, in the original DataFrame, the subjects that didn't answer
-        all questions, and replaces that missing value with the mean of the
-        other grades for that student. Returns the corrected DataFrame,
-        as well as the row indices of the students that their new grades
-        were generated.
-        """
+        return self.data[mask].reset_index()
 
-    def correlate_gender_age(self) -> pd.DataFrame:
-        """
-        Looks for a correlation between the gender of the subject, their age
-        and the score for all five questions.
-        Returns a DataFrame with a MultiIndex containing the gender and whether
-        the subject is above 40 years of age, and the average score in each of
-        the five questions.
-        """
+
+def fill_na_with_mean(self) -> Union[pd.DataFrame, np.ndarray]:
+    """
+    Finds, in the original DataFrame, the subjects that didn't answer
+    all questions, and replaces that missing value with the mean of the
+    other grades for that student. Returns the corrected DataFrame,
+    as well as the row indices of the students that their new grades
+    were generated.
+    """
+    new_df = self.data.copy()
+    new_df[new_df.loc[:, 'q1':'q5'].isna()] = new_df.loc[:, 'q1':'q5'].mean(axis=0)
+    return new_df
+
+
+def correlate_gender_age(self) -> pd.DataFrame:
+    """
+    Looks for a correlation between the gender of the subject, their age
+    and the score for all five questions.
+    Returns a DataFrame with a MultiIndex containing the gender and whether
+    the subject is above 40 years of age, and the average score in each of
+    the five questions.
+    """
