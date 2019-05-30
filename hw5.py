@@ -51,25 +51,26 @@ class QuestionnaireAnalysis:
 
         return self.data[mask].reset_index()
 
+    def fill_na_with_mean(self) -> Union[pd.DataFrame, np.ndarray]:
+        """
+        Finds, in the original DataFrame, the subjects that didn't answer
+        all questions, and replaces that missing value with the mean of the
+        other grades for that student. Returns the corrected DataFrame,
+        as well as the row indices of the students that their new grades
+        were generated.
+        """
+        new_df = self.data.copy()
+        new_df[new_df.loc[:, 'q1':'q5'].isna()] = new_df.loc[:, 'q1':'q5'].mean(axis=0)
+        return new_df
 
-def fill_na_with_mean(self) -> Union[pd.DataFrame, np.ndarray]:
-    """
-    Finds, in the original DataFrame, the subjects that didn't answer
-    all questions, and replaces that missing value with the mean of the
-    other grades for that student. Returns the corrected DataFrame,
-    as well as the row indices of the students that their new grades
-    were generated.
-    """
-    new_df = self.data.copy()
-    new_df[new_df.loc[:, 'q1':'q5'].isna()] = new_df.loc[:, 'q1':'q5'].mean(axis=0)
-    return new_df
-
-
-def correlate_gender_age(self) -> pd.DataFrame:
-    """
-    Looks for a correlation between the gender of the subject, their age
-    and the score for all five questions.
-    Returns a DataFrame with a MultiIndex containing the gender and whether
-    the subject is above 40 years of age, and the average score in each of
-    the five questions.
-    """
+    def correlate_gender_age(self) -> pd.DataFrame:
+        """
+        Looks for a correlation between the gender of the subject, their age
+        and the score for all five questions.
+        Returns a DataFrame with a MultiIndex containing the gender and whether
+        the subject is above 40 years of age, and the average score in each of
+        the five questions.
+        """
+        self.data.set_index(['gender', 'age'], append=True)
+        self.data['over 40'] = self.data['age'] > 40
+        return self.data.groupby(['gender', 'over 40']).mean()
