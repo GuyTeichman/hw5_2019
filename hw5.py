@@ -35,7 +35,7 @@ class QuestionnaireAnalysis:
         The second item being the bin edges.
         """
         bin_edges = np.arange(0, 110, 10)
-        hist = self.data.hist(column='age', bins=bin_edges, right=False)
+        hist = self.data.hist(column='age', bins=bin_edges)
         bin_vals = pd.cut(self.data['age'], bins=bin_edges, right=False).value_counts().sort_index().values
         return bin_vals, bin_edges
 
