@@ -59,9 +59,10 @@ class QuestionnaireAnalysis:
         as well as the row indices of the students that their new grades
         were generated.
         """
-        new_df = self.data.copy()
-        new_df[new_df.loc[:, 'q1':'q5'].isna()] = new_df.loc[:, 'q1':'q5'].mean(axis=0)
-        return new_df
+        changed_rows=self.data.loc[:, 'q1':'q5'].isna().max(axis=1)
+        self.data.T.fillna(self.data.loc[:, 'q1':'q5'].mean(axis=1)).T
+        # = [new_df.loc[:, 'q1':'q5'].isna()]
+        return self.data,changed_rows[changed_rows].index
 
     def correlate_gender_age(self) -> pd.DataFrame:
         """
